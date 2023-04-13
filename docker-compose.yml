@@ -1,0 +1,62 @@
+version: "3.1"
+services:
+
+  influxdb:
+    image: sahebdatta/devicehealth_database:v_1.0.0
+    container_name: influxdb
+    restart: always
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=tester
+      - DOCKER_INFLUXDB_INIT_PASSWORD=12345678
+      - DOCKER_INFLUXDB_INIT_ORG=theopenfactory
+      - DOCKER_INFLUXDB_INIT_BUCKET=RawData
+      - DOCKER_INFLUXDB_INIT_RETENTION=2d
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token-the-open-factory
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+    ports:
+      - 8086:8086
+    networks:
+      - monitoring
+    volumes:
+      - influxdb-volume:/var/lib/influxdb
+
+  telegraf:
+    image: sahebdatta/devicehealth_telegraf:v_1.0.0
+    container_name: telegraf
+    environment:
+      - INFLUX_TOKEN=my-super-secret-auth-token-the-open-factory
+      - IP_INFLUX=influxdb:8086
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+    networks:
+      - monitoring
+    volumes:
+      - telegraf-volume:/var/lib/telegraf
+
+  grafana:
+    image: sahebdatta/devicehealth_dashboard:v_1.0.0
+    container_name: grafana
+    restart: always
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=32699
+    ports:
+      - 3000:3000
+    networks:
+      - monitoring
+    volumes:
+      - grafana-volume:/var/lib/grafana
+
+networks:
+  monitoring: 
+volumes:
+  influxdb-volume:
+  telegraf-volume:
+  grafana-volume:
